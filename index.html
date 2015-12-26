@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <title>CryptoGame</title>
+    <meta name="author" content="qgustavor">
+    <meta name="original-author" content="Codrops">
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/s-yadav/patternLock/8a6c5843e21aec95b27610250c0d18abb5029846/patternLock.css">
+    <link rel="stylesheet" type="text/css" href="css/game.css">
+    <script src="js/modernizr.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <section>
+        <form id="gameForm" class="simform" autocomplete="off">
+          <div class="simform-inner">
+            <ol class="questions"></ol><!-- /questions -->
+            <button class="submit" type="submit">Send answers</button>
+            <div class="controls">
+              <button class="next"></button>
+              <div class="progress"></div>
+              <span class="number"><span class="number-current"></span><span class="number-total"></span></span>
+              <span class="error-message"></span>
+            </div><!-- / controls -->
+          </div><!-- /simform-inner -->
+          <span class="final-message"></span>
+        </form><!-- /simform -->      
+      </section>
+    </div><!-- /container -->
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdn.rawgit.com/s-yadav/patternLock/8a6c5843e21aec95b27610250c0d18abb5029846/patternLock.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/0.13.2/nacl-fast.min.js"></script>
+    <script src="https://cdn.rawgit.com/dchest/tweetnacl-auth-js/a93348a10405814dfbc24af687dba10e188ef661/nacl-auth.min.js"></script>
+    
+<!-- game data start --><!-- game data end -->
+    
+    <script>
+      (function () {
+        var gameForm = $('#gameForm');
+        var errorElement = $('.error-message');
+        
+        if (typeof Uint8Array === 'undefined') {
+          errorElement
+            .addClass('show')
+            .text('Browser not supported. Try IE10+, Edge, Firefox, Chrome, Safari or Opera.');
+          return;
+        }
+        
+        var currentLevel = -1;
+        var levelCount = $('script[type="text/challenge"]').length;
+        
+        $('.number-total').text(levelCount);
+        
+        function registerChallenge(options) {        
+          $('.questions li.current').removeClass('current');
+          errorElement.removeClass('show');
+          
+          if (options.type === 'game-won') {
+            $('.simform-inner').fadeOut(300);
+            $('.final-message')
+              .addClass('show')
+              .html(options.message || 'You won the game!');
+              
+            if (options.url) {
+              setTimeout(function () {
+                location.href = options.url;
+              }, options.urlTimeout || 5000);
+            }
+              
+            return;
+          }
+          
+          $('.number-current').text((++currentLevel) + 1);
+          $('.progress').css('width', (currentLevel * 100 / (levelCount - 1)).toFixed(3) + '%');
+          
+          currentGame = options;
+          currentGame.question = $('<li>')
+            .addClass('current')
+            .html(options.question)
+            .appendTo('.questions');
+            
+          $('input').focus(function () {
+            $('.next').addClass('show');
+          });
+          
+          if (options.type === 'pattern') {
+            gameForm.addClass('pattern');
+            var lock = new PatternLock($('<div>').appendTo(currentGame.question), {
+              onDraw: function (pattern) {
+                currentGame.question.find('input').val(pattern);
+                gameForm.submit();
+              }
+            });
+          } else {
+            gameForm.removeClass('pattern');
+          }
+        }
+        
+        var currentGame = {};
+        
+        gameForm.on('submit', function (evt) {
+          evt.preventDefault();
+          
+          var inputData = currentGame.question.find('input').val();
+          if (currentGame.type === 'numeric' && !$.isNumeric(inputData)) {
+            errorElement
+              .addClass('show')
+              .text('O valor não é numérico');
+            return;
+          }
+          if (currentGame.type === 'pattern') {
+            var reversed = inputData.split('').reverse().join('');
+            inputData = inputData > reversed ? reversed : inputData;
+          }
+          if (currentGame.type === 'text') {
+            inputData = inputData.trim().toLowerCase();
+          }
+          decodeLevel({
+            rounds: currentGame.rounds,
+            salt: currentGame.salt,
+            password: inputData,
+            target: currentGame.answer,
+            encryptedData: $('#' + currentGame.nextLevel).html().replace(/\s/g, ''),
+          }, registerChallenge);
+        });
+        
+        function decodeLevel(options, callback) {
+          var loops = options.rounds || 20000;
+          var subLoopsCount = 1000;
+          var password = nacl.hash(nacl.util.decodeUTF8(options.password)).subarray(0, 32);
+          var result = nacl.util.decodeBase64(options.salt);
+          
+          gameForm.addClass('loading');
+          
+          (function loop() {
+            var subLoops = Math.min(loops, subLoopsCount);
+            for (var i = 0; i < subLoops; i++) {
+              result = nacl.auth(result, password);
+            }
+            
+            if (subLoops === subLoopsCount) {
+              loops -= subLoopsCount;
+              setTimeout(loop, 0);
+              return;
+            }
+            
+            gameForm.removeClass('loading');
+            
+            var verificationHash = nacl.hash(result);
+            
+            if (options.target !== nacl.util.encodeBase64(verificationHash)) {
+              errorElement
+                .addClass('show')
+                .text('Wrong answer!');
+              return;
+            }
+            
+            var encryptedPack = nacl.util.decodeBase64(options.encryptedData);
+            
+            var decoded = nacl.secretbox.open(
+              encryptedPack.subarray(24),
+              encryptedPack.subarray(0, 24),
+              result.subarray(0, 32)
+            );
+            
+            callback(JSON.parse(nacl.util.encodeUTF8(decoded)));
+          }());
+        }
+        
+        registerChallenge(JSON.parse($('#level1').html()));
+      }());
+    </script>    
+  </body>
+</html>

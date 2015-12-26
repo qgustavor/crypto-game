@@ -1,0 +1,31 @@
+[
+  {
+    "question": "<span><label for=q1>Heard that famous band? ...probably not. They haven't had any gigs yet. What's their name?</label></span><input id=q1 type=text>",
+    "answer": "1023",
+    "type": "numeric",
+    "nextLevel": "level2"
+  },
+  {
+    "question": "<span><label for=q2>Why are there no blind programmers? Because they don't...</label></span><input id=q2 type=text>",
+    "answer": "3214789",
+    "type": "pattern",
+    "nextLevel": "level3"
+  },
+  {
+    "question": "<span><label for=q3>Why do Java programmers need glasses?</label></span><input id=q3 type=text>",
+    "answer": "Because they don't C#!",
+    "type": "text",
+    "nextLevel": "level4"
+  },
+  {
+    "question": "<span><label for=q4>What did Java say to C?</label></span><input id=q4 type=text>",
+    "answer": "You have no class.",
+    "type": "pass",
+    "nextLevel": "level5"
+  },
+  {
+    "type": "game-won",
+    "message": "You won the game! You're be redirected to other page to get your prize.",
+    "url": "#redirect-to-winner-page"
+  }
+]
