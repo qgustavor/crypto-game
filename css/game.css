@@ -108,11 +108,11 @@ section.related {
 	font-weight: normal;
 	font-style: normal;
 	font-family: 'icomoon';
-	src:url('../fonts/game-de-natal/icomoon.eot?-9heso');
-	src:url('../fonts/game-de-natal/icomoon.eot?#iefix-9heso') format('embedded-opentype'),
-		url('../fonts/game-de-natal/icomoon.woff?-9heso') format('woff'),
-		url('../fonts/game-de-natal/icomoon.ttf?-9heso') format('truetype'),
-		url('../fonts/game-de-natal/icomoon.svg?-9heso#icomoon') format('svg');
+	src:url('../fonts/icomoon.eot?-9heso');
+	src:url('../fonts/icomoon.eot?#iefix-9heso') format('embedded-opentype'),
+		url('../fonts/icomoon.woff?-9heso') format('woff'),
+		url('../fonts/icomoon.ttf?-9heso') format('truetype'),
+		url('../fonts/icomoon.svg?-9heso#icomoon') format('svg');
 }
 
 .simform {
